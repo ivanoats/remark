@@ -57,9 +57,14 @@ function applyDefaults (dom, options) {
 
   if (options.hasOwnProperty('sourceUrl')) {
     var req = new dom.XMLHttpRequest();
-    req.open('GET', options.sourceUrl, false);
+    req.open('GET', options.sourceUrl);
+    req.onload = function(e) {
+      if (this.status === 200) {
+        options.source = req.responseText.replace(/\r\n/g, '\n');
+      }
+    };
     req.send();
-    options.source = req.responseText.replace(/\r\n/g, '\n');
+
   }
   else if (!options.hasOwnProperty('source')) {
     sourceElement = dom.getElementById('source');
