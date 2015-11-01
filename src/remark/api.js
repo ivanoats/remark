@@ -8,6 +8,7 @@ var EventEmitter = require('events').EventEmitter
   , DefaultController = require('./controllers/defaultController')
   , Dom = require('./dom')
   , macros = require('./macros')
+  , async = require('async')
   ;
 
 module.exports = Api;
@@ -56,15 +57,23 @@ function applyDefaults (dom, options) {
   options = options || {};
 
   if (options.hasOwnProperty('sourceUrl')) {
-    var req = new dom.XMLHttpRequest();
-    req.open('GET', options.sourceUrl);
-    req.onload = function(e) {
-      if (this.status === 200) {
-        options.source = req.responseText.replace(/\r\n/g, '\n');
-      }
-    };
-    req.send();
-
+    var done = false;
+    async.whilst(
+      function() { return done; }
+      , function(callback) {
+          var req = new dom.XMLHttpRequest();
+          req.open('GET', options.sourceUrl, true);
+          req.onload = function(e) {
+            if (this.status === 200) {
+              options.source = req.responseText.replace(/\r\n/g, '\n');
+              done = true;
+            }
+          };
+          req.send();
+        }
+      , function(err) { options.markdownLoaded = true; }
+    );
+    return options;
   }
   else if (!options.hasOwnProperty('source')) {
     sourceElement = dom.getElementById('source');
@@ -77,7 +86,6 @@ function applyDefaults (dom, options) {
   if (!(options.container instanceof window.HTMLElement)) {
     options.container = dom.getBodyElement();
   }
-
   return options;
 }
 
